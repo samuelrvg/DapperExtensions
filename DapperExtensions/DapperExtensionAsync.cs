@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 using Dapper;
@@ -91,8 +89,11 @@ namespace DapperExtensions
             return await Task.Run(() =>
             {
                 var builder = BuilderFactory.GetBuilder(conn);
-                conn.Execute(builder.GetInsertReturnIdSql<T>(sequence), model, tran, commandTimeout);
-                return GetSequenceCurrent<decimal>(conn, sequence, tran, null);
+                TableAttribute table = model.GetType().GetCustomAttributes(false).FirstOrDefault(f => f is TableAttribute) as TableAttribute;
+                conn.Execute(builder.GetInsertReturnIdSql<T>(table.SequenceName), model, tran, commandTimeout);
+                decimal id = GetSequenceCurrent<decimal>(conn, table.SequenceName, tran, null);
+                model.GetType().GetProperty(table.KeyName).SetValue(model, id);
+                return id;
             });
 
         }

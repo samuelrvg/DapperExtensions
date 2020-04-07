@@ -1,5 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System;
 
 namespace DapperExtensions
 {
@@ -9,6 +9,7 @@ namespace DapperExtensions
         public string KeyName { get; set; } // 主键名称
         public Type KeyType { get; set; } //主键类型
         public bool IsIdentity { get; set; } //是否是自增键
+        public string SequenceName { get; set; }
 
 
         public List<string> AllFieldList { get; set; } //所有列

@@ -216,8 +216,11 @@ namespace DapperExtensions
         public static decimal InsertReturnIdForOracle<T>(this IDbConnection conn, T model, string sequence, IDbTransaction tran = null, int? commandTimeout = null)
         {
             var builder = BuilderFactory.GetBuilder(conn);
-            conn.Execute(builder.GetInsertReturnIdSql<T>(sequence), model, tran, commandTimeout);
-            return GetSequenceCurrent<decimal>(conn, sequence, tran, null);
+            TableAttribute table = model.GetType().GetCustomAttributes(false).FirstOrDefault(f => f is TableAttribute) as TableAttribute;
+            conn.Execute(builder.GetInsertReturnIdSql<T>(table.SequenceName), model, tran, commandTimeout);
+            decimal id = GetSequenceCurrent<decimal>(conn, table.SequenceName, tran, null);
+            model.GetType().GetProperty(table.KeyName).SetValue(model, id);
+            return id;
         }
 
 

@@ -1,9 +1,8 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using System;
 
 namespace DapperExtensions
 {
@@ -114,15 +113,15 @@ namespace DapperExtensions
                 model.TableName = table.TableName;
                 model.KeyName = table.KeyName;
                 model.IsIdentity = table.IsIdentity;
+                model.SequenceName = table.SequenceName;
                 model.AllFieldList = new List<string>();
                 model.ExceptKeyFieldList = new List<string>();
-
 
                 var allproperties = t.GetProperties();
 
                 foreach (var item in allproperties)
                 {
-                    var igore = item.GetCustomAttributes(false).FirstOrDefault(f => f is IgoreAttribute) as IgoreAttribute;
+                    var igore = item.GetCustomAttributes(false).FirstOrDefault(f => f is IgnoreAttribute) as IgnoreAttribute;
                     if (igore == null)
                     {
                         string Name = item.Name;
@@ -130,7 +129,7 @@ namespace DapperExtensions
                         if (column != null)
                             Name = column.Name;
 
-                        model.AllFieldList.Add(Name); //所有列
+                        model.AllFieldList.Add(Name.ToUpper()); //所有列
 
                         if (Name.ToLower().Equals(model.KeyName.ToLower()))
                             model.KeyType = item.PropertyType;
@@ -142,46 +141,6 @@ namespace DapperExtensions
                 return model;
             }
 
-        }
-
-        [Obsolete]
-        public static void InitTable(TableEntity table, string leftChar, string rightChar) //初始化增删改等语句
-        {
-            string Fields = GetFieldsStr(table.AllFieldList, leftChar, rightChar);
-            string FieldsAt = GetFieldsAtStr(table.AllFieldList);
-            string FieldsEq = GetFieldsEqStr(table.AllFieldList, leftChar, rightChar);
-
-            string FieldsExtKey = GetFieldsStr(table.ExceptKeyFieldList, leftChar, rightChar);
-            string FieldsAtExtKey = GetFieldsAtStr(table.ExceptKeyFieldList);
-            string FieldsEqExtKey = GetFieldsEqStr(table.ExceptKeyFieldList, leftChar, rightChar);
-
-            table.AllFields = Fields;
-            table.AllFieldsAt = FieldsAt;
-            table.AllFieldsAtEq = FieldsEq;
-
-            table.AllFieldsExceptKey = FieldsExtKey;
-            table.AllFieldsAtExceptKey = FieldsAtExtKey;
-            table.AllFieldsAtEqExceptKey = FieldsEqExtKey;
-
-            table.InsertSql = string.Format("INSERT INTO {3}{0}{4}({1})VALUES({2})", table.TableName, Fields, FieldsAt, leftChar, rightChar);
-            if (!string.IsNullOrEmpty(table.KeyName)) //有主键
-            {
-                if (table.IsIdentity) //是自增
-                {
-                    table.InsertSql = string.Format("INSERT INTO {3}{0}{4}({1})VALUES({2})", table.TableName, FieldsExtKey, FieldsAtExtKey, leftChar, rightChar);
-                }
-
-                table.InsertIdentitySql = string.Format("INSERT INTO {3}{0}{4}({1})VALUES({2})", table.TableName, Fields, FieldsAt, leftChar, rightChar);
-
-                table.DeleteByIdSql = string.Format("DELETE FROM {2}{0}{3} WHERE {2}{1}{3}=@id", table.TableName, table.KeyName, leftChar, rightChar);
-                table.DeleteByIdsSql = string.Format("DELETE FROM {2}{0}{3} WHERE {2}{1}{3} IN @ids", table.TableName, table.KeyName, leftChar, rightChar);
-                table.GetByIdSql = string.Format("SELECT {0} FROM {3}{1}{4} WHERE {3}{2}{4}=@id", Fields, table.TableName, table.KeyName, leftChar, rightChar);
-                table.GetByIdsSql = string.Format("SELECT {0} FROM {3}{1}{4} WHERE {3}{2}{4} IN @ids", Fields, table.TableName, table.KeyName, leftChar, rightChar);
-                table.UpdateSql = string.Format("UPDATE {3}{0}{4} SET {1} WHERE {3}{2}{4}=@{2}", table.TableName, FieldsEqExtKey, table.KeyName, leftChar, rightChar);
-            }
-
-            table.DeleteAllSql = string.Format("DELETE FROM {1}{0}{2} ", table.TableName, leftChar, rightChar);
-            table.GetAllSql = string.Format("SELECT {0} FROM {2}{1}{3} ", Fields, table.TableName, leftChar, rightChar);
         }
 
         public static void InitTableForSqlServer(TableEntity table) //初始化增删改等语句sqlserver专用
@@ -360,26 +319,30 @@ namespace DapperExtensions
             table.AllFieldsAtExceptKey = FieldsAtExtKey;
             table.AllFieldsAtEqExceptKey = FieldsEqExtKey;
 
-            table.InsertSql = string.Format("INSERT INTO \"{0}\"({1})VALUES({2})", table.TableName, Fields, FieldsAt);
+            table.InsertSql = string.Format("INSERT INTO {0}({1})VALUES({2})", table.TableName, Fields, FieldsAt);
+
+            if (!string.IsNullOrEmpty(table.SequenceName))
+                table.InsertSql = string.Format("INSERT INTO {0}({1})VALUES({2}.NEXTVAL, {3})", table.TableName, Fields, table.SequenceName, FieldsAt);
+
             if (!string.IsNullOrEmpty(table.KeyName)) //有主键
             {
-                table.InsertReturnIdSql = string.Format("INSERT INTO \"{0}\"({1})VALUES(```seq```.NEXTVAL,{2})", table.TableName, Fields, FieldsAtExtKey);
+                table.InsertReturnIdSql = string.Format("INSERT INTO {0}({1})VALUES(```seq```.NEXTVAL, {2})", table.TableName, Fields, FieldsAtExtKey);
                 if (table.IsIdentity) //是自增
                 {
-                    table.InsertSql = string.Format("INSERT INTO \"{0}\"({1})VALUES({2})", table.TableName, FieldsExtKey, FieldsAtExtKey);
+                    table.InsertSql = string.Format("INSERT INTO {0}({1})VALUES({2})", table.TableName, FieldsExtKey, FieldsAtExtKey);
                 }
 
-                table.InsertIdentitySql = string.Format("INSERT INTO \"{0}\"({1})VALUES({2})", table.TableName, Fields, FieldsAt);
+                table.InsertIdentitySql = string.Format("INSERT INTO {0}({1})VALUES({2})", table.TableName, Fields, FieldsAt);
 
-                table.DeleteByIdSql = string.Format("DELETE FROM \"{0}\" WHERE \"{1}\"=:id", table.TableName, table.KeyName);
-                table.DeleteByIdsSql = string.Format("DELETE FROM \"{0}\" WHERE \"{1}\" IN :ids", table.TableName, table.KeyName);
-                table.GetByIdSql = string.Format("SELECT {0} FROM \"{1}\" WHERE \"{2}\"=:id", Fields, table.TableName, table.KeyName);
-                table.GetByIdsSql = string.Format("SELECT {0} FROM \"{1}\" WHERE \"{2}\" IN :ids", Fields, table.TableName, table.KeyName);
-                table.UpdateSql = string.Format("UPDATE \"{0}\" SET {1} WHERE \"{2}\"=:{2}", table.TableName, FieldsEqExtKey, table.KeyName);
+                table.DeleteByIdSql = string.Format("DELETE FROM {0} WHERE {1}=:id", table.TableName, table.KeyName);
+                table.DeleteByIdsSql = string.Format("DELETE FROM {0} WHERE {1} IN :ids", table.TableName, table.KeyName);
+                table.GetByIdSql = string.Format("SELECT {0} FROM {1} WHERE {2}=:id", Fields, table.TableName, table.KeyName);
+                table.GetByIdsSql = string.Format("SELECT {0} FROM {1} WHERE {2} IN :ids", Fields, table.TableName, table.KeyName);
+                table.UpdateSql = string.Format("UPDATE {0} SET {1} WHERE {2}=:{2}", table.TableName, FieldsEqExtKey, table.KeyName);
             }
 
-            table.DeleteAllSql = string.Format("DELETE FROM \"{0}\" ", table.TableName);
-            table.GetAllSql = string.Format("SELECT {0} FROM \"{1}\" ", Fields, table.TableName);
+            table.DeleteAllSql = string.Format("DELETE FROM {0} ", table.TableName);
+            table.GetAllSql = string.Format("SELECT {0} FROM {1} ", Fields, table.TableName);
         }
 
         public static void CheckTableKey(TableEntity table)

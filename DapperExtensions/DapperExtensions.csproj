@@ -47,7 +47,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Attribute\ColumnAttribute.cs" />
-    <Compile Include="Attribute\IgoreAttribute.cs" />
+    <Compile Include="Attribute\IgnoreAttribute.cs" />
     <Compile Include="Attribute\TableAttribute.cs" />
     <Compile Include="Cache\MySqlCache.cs" />
     <Compile Include="Cache\OracleCache.cs" />
