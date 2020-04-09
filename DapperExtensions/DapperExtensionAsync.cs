@@ -84,14 +84,16 @@ namespace DapperExtensions
             return await conn.ExecuteScalarAsync<dynamic>(builder.GetInsertReturnIdSql<T>(), model, tran, commandTimeout);
         }
 
-        public async static Task<decimal> InsertReturnIdForOracleAsync<T>(this IDbConnection conn, T model, string sequence, IDbTransaction tran = null, int? commandTimeout = null)
+        public async static Task<decimal> InsertReturnIdForOracleAsync<T>(this IDbConnection conn, T model, string sequence = null, IDbTransaction tran = null, int? commandTimeout = null)
         {
             return await Task.Run(() =>
             {
                 var builder = BuilderFactory.GetBuilder(conn);
                 TableAttribute table = model.GetType().GetCustomAttributes(false).FirstOrDefault(f => f is TableAttribute) as TableAttribute;
-                conn.Execute(builder.GetInsertReturnIdSql<T>(table.SequenceName), model, tran, commandTimeout);
-                decimal id = GetSequenceCurrent<decimal>(conn, table.SequenceName, tran, null);
+                if (string.IsNullOrEmpty(sequence))
+                    sequence = table.SequenceName;
+                conn.Execute(builder.GetInsertReturnIdSql<T>(sequence), model, tran, commandTimeout);
+                decimal id = GetSequenceCurrent<decimal>(conn, sequence, tran, null);
                 model.GetType().GetProperty(table.KeyName).SetValue(model, id);
                 return id;
             });
