@@ -55,7 +55,11 @@ namespace DapperExtensions
 
         string GetBySkipTakeSql<T>(int skip, int take, string where, string returnFields, string orderBy);
 
+        string GetBySkipTakeSql<T>(string query, int skip, int take, string where, string returnFields, string orderBy);
+
         string GetByPageIndexSql<T>(int pageIndex, int pageSize, string where, string returnFields, string orderBy);
+
+        string GetByPageIndexSql<T>(string query, int pageIndex, int pageSize, string where, string returnFields, string orderBy);
 
         string GetPageSql<T>(int pageIndex, int pageSize, string where, string returnFields, string orderBy);
 

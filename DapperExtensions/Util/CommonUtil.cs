@@ -127,9 +127,14 @@ namespace DapperExtensions
                         string Name = item.Name;
                         var column = item.GetCustomAttributes(false).FirstOrDefault(f => f is ColumnAttribute) as ColumnAttribute;
                         if (column != null)
+                        {
                             Name = column.Name;
-
-                        model.AllFieldList.Add(Name.ToUpper()); //所有列
+                            model.AllFieldList.Add(Name);
+                        }
+                        else
+                        {
+                            model.AllFieldList.Add(Name.ToUpper()); //所有列
+                        }
 
                         if (Name.ToLower().Equals(model.KeyName.ToLower()))
                             model.KeyType = item.PropertyType;

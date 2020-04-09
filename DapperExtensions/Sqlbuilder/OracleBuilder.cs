@@ -9,7 +9,7 @@ namespace DapperExtensions
 
         #region common
 
-        private static void InitPage(StringBuilder sb, TableEntity table, int skip, int take, string where, string returnFields, string orderBy)
+        private static void InitPage(StringBuilder sb, TableEntity table, string query, int skip, int take, string where, string returnFields, string orderBy)
         {
             if (string.IsNullOrEmpty(returnFields))
                 returnFields = table.AllFields;
@@ -25,7 +25,11 @@ namespace DapperExtensions
                     orderBy = string.Format("ORDER BY \"{0}\"", table.AllFieldList.First());
                 }
             }
-            sb.AppendFormat("SELECT * FROM(SELECT A.*,ROWNUM RN FROM (SELECT {0} FROM \"{1}\" {2} {3}) A  WHERE ROWNUM <= {4}) WHERE RN > {5}", returnFields, table.TableName, where, orderBy, skip + take, skip);
+
+            if (!string.IsNullOrEmpty(query))
+                sb.AppendFormat("SELECT * FROM(SELECT A.*,ROWNUM RN FROM ({0}) A WHERE ROWNUM <= {1}) WHERE RN > {2}", query, skip + take, skip);
+            else
+                sb.AppendFormat("SELECT * FROM(SELECT A.*,ROWNUM RN FROM (SELECT {0} FROM \"{1}\" {2} {3}) A  WHERE ROWNUM <= {4}) WHERE RN > {5}", returnFields, table.TableName, where, orderBy, skip + take, skip);
         }
 
         #endregion
@@ -188,7 +192,15 @@ namespace DapperExtensions
         {
             var table = OracleCache.GetTableEntity<T>();
             StringBuilder sb = new StringBuilder();
-            InitPage(sb, table, skip, take, where, returnFields, orderBy);
+            InitPage(sb, table, "", skip, take, where, returnFields, orderBy);
+            return sb.ToString();
+        }
+
+        public string GetBySkipTakeSql<T>(string query, int skip, int take, string where, string returnFields, string orderBy)
+        {
+            var table = OracleCache.GetTableEntity<T>();
+            StringBuilder sb = new StringBuilder();
+            InitPage(sb, table, query, skip, take, where, returnFields, orderBy);
             return sb.ToString();
         }
 
@@ -199,7 +211,17 @@ namespace DapperExtensions
             {
                 skip = (pageIndex - 1) * pageSize;
             }
-            return GetBySkipTakeSql<T>(skip, pageSize, where, returnFields, orderBy);
+            return GetBySkipTakeSql<T>("", skip, pageSize, where, returnFields, orderBy);
+        }
+
+        public string GetByPageIndexSql<T>(string query, int pageIndex, int pageSize, string where, string returnFields, string orderBy)
+        {
+            int skip = 0;
+            if (pageIndex > 0)
+            {
+                skip = (pageIndex - 1) * pageSize;
+            }
+            return GetBySkipTakeSql<T>(query, skip, pageSize, where, returnFields, orderBy);
         }
 
         public string GetPageSql<T>(int pageIndex, int pageSize, string where, string returnFields, string orderBy)

@@ -465,6 +465,18 @@ namespace DapperExtensions
             return conn.Query(builder.GetByPageIndexSql<T>(pageIndex, pageSize, where, returnFields, orderBy), param, tran, true, commandTimeout);
         }
 
+        public static IEnumerable<T> GetByPageIndex<T>(this IDbConnection conn, string query, int pageIndex, int pageSize, string where = null, object param = null, string returnFields = null, string orderBy = null, IDbTransaction tran = null, int? commandTimeout = null)
+        {
+            var builder = BuilderFactory.GetBuilder(conn);
+            return conn.Query<T>(builder.GetByPageIndexSql<T>(query, pageIndex, pageSize, where, returnFields, orderBy), param, tran, true, commandTimeout);
+        }
+
+        public static IEnumerable<dynamic> GetByPageIndexDynamic<T>(this IDbConnection conn, string query, int pageIndex, int pageSize, string where = null, object param = null, string returnFields = null, string orderBy = null, IDbTransaction tran = null, int? commandTimeout = null)
+        {
+            var builder = BuilderFactory.GetBuilder(conn);
+            return conn.Query(builder.GetByPageIndexSql<T>(query, pageIndex, pageSize, where, returnFields, orderBy), param, tran, true, commandTimeout);
+        }
+
         public static PageEntity<T> GetPage<T>(this IDbConnection conn, int pageIndex, int pageSize, string where = null, object param = null, string returnFields = null, string orderBy = null, IDbTransaction tran = null, int? commandTimeout = null)
         {
             var builder = BuilderFactory.GetBuilder(conn);
